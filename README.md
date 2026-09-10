@@ -1,4 +1,4 @@
-# Codex Telegram Bot（纯本地）
+# Codex Telegram Bot
 
 通过 Telegram 查看本机 Codex 任务、最近 48 小时聊天记录、订阅进度、排队后续消息，并在任务回合完成后收到通知。
 
