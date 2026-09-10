@@ -17,7 +17,10 @@ try {
   const service = new CodexService(server, history);
   const threads = await service.list();
   console.log(`✓ 读取 ${threads.length} 个本机任务；日志显示 ${threads.filter(t => t.status === 'running').length} 个正在进行`);
-  if (threads[0]) console.log(`✓ 48 小时历史首屏：${history.page(threads[0].id).messages.length} 条`);
+  if (threads[0]) {
+    const page = await service.execute({ action: 'history', threadId: threads[0].id });
+    if (page.kind === 'history') console.log(`✓ 48 小时历史首屏：${page.messages.length} 条`);
+  }
   console.log(`✓ 完成事件读取正常：最近 48 小时 ${service.completions(Date.now() - 172800000).length} 条`);
   console.log('检查完成，未向 Telegram 发消息，也未调用模型。回复使用 queue/add；排队成功不保证桌面立即执行。');
 } catch (error) { console.error(`✗ ${(error as Error).message}`); process.exitCode = 1; }

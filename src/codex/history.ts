@@ -1,6 +1,6 @@
 import { DatabaseSync } from 'node:sqlite';
 import { existsSync } from 'node:fs';
-import { join } from 'node:path';
+import { basename, join } from 'node:path';
 import type { CommandResult, Status } from '../shared/protocol.ts';
 import { splitText, previewText } from '../shared/text.ts';
 
@@ -35,6 +35,15 @@ export class HistoryStore {
     this.db.prepare('SELECT turn_id, started_at, completed_at, final_agent_item_id FROM thread_turns LIMIT 0').all();
   }
   close() { this.db.close(); }
+  /** Rotated rollout files can be projected under a different ID than the desktop task. */
+  resolveThreadId(id: string, rolloutPath?: string): string {
+    if (!rolloutPath) return id;
+    const uuid = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
+    const match = basename(rolloutPath).match(new RegExp(`^rollout-.+-(${uuid})_(${uuid})\\.jsonl$`, 'i'));
+    if (!match || match[1] !== id) return id;
+    // Accept only the task's own current rollout and an ID actually present in the projection.
+    return this.db.prepare('SELECT 1 FROM thread_turns WHERE thread_id = ? LIMIT 1').get(match[2]) ? match[2] : id;
+  }
   latestStatus(id: string): string | undefined {
     const row = this.db.prepare('SELECT status FROM thread_turns WHERE thread_id = ? ORDER BY rollout_ordinal DESC LIMIT 1').get(id);
     return row?.status as string | undefined;
